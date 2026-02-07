@@ -32,7 +32,8 @@ st.write(f"Menampilkan {len(filtered_df)} materi")
 for index, row in filtered_df.iterrows():
     with st.expander(f"📖 {row['Judul']}"): # Judul yang bisa diklik/drop-down
         st.write(f"**Kategori:** {row['Kategori']}")
-        st.write(f"**Sub-Kategori:** {row['Sub']}")
+        st.write(f"**Sub-Kategori:** {row['Sub-Kategori']}")
         st.markdown("---")
 
         st.write(row['Isi_Materi']) # Detail isi materi
+
