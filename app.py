@@ -1,39 +1,71 @@
 import streamlit as st
 import pandas as pd
 
-# Judul Aplikasi
-st.set_page_config(page_title="Rangkuman Materi", page_icon="📚")
+st.set_page_config(page_title="Rangkuman Materi", layout="centered")
+
+# Judul Utama
 st.title("📚 Dashboard Materi")
 
-# 1. Koneksi ke GSheet (Ganti dengan link CSV kamu)
+# 1. Ambil Data
 SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSHsSznI1DtoHsc4Te0kG6CeG_GtWMpJLbb5v2IFF35066sOpj9irgpqYvdZfbpXyfePvatgNX8b_Ad/pub?gid=0&single=true&output=csv"
 
-# Fungsi untuk mengambil data (cache agar cepat)
 @st.cache_data
 def load_data():
-    return pd.read_csv(SHEET_URL)
+    df = pd.read_csv(SHEET_URL)
+    # Membersihkan spasi di nama kolom agar tidak error lagi
+    df.columns = df.columns.str.strip()
+    return df
 
 df = load_data()
-st.write("Nama kolom yang terdeteksi:", df.columns.tolist())
 
-# 2. Fitur Pencarian di Bagian Atas
-search_query = st.text_input("🔍 Cari materi atau kategori...", "")
+# --- BAGIAN FILTER ---
 
-# 3. Logika Filter
+# A. Search Bar (Global Search)
+search_query = st.text_input("🔍 Cari Kata Kunci Materi...", "")
+
+# B. Dropdown Kategori (Berjenjang)
+col1, col2 = st.columns(2)
+
+with col1:
+    list_kategori = ["Semua"] + sorted(df['Kategori'].unique().tolist())
+    kat_pilihan = st.selectbox("Pilih Kategori:", list_kategori)
+
+with col2:
+    # Filter Sub-Kategori berdasarkan Kategori yang dipilih
+    if kat_pilihan != "Semua":
+        sub_df = df[df['Kategori'] == kat_pilihan]
+        list_sub = ["Semua"] + sorted(sub_df['Sub-Kategori'].unique().tolist())
+    else:
+        list_sub = ["Semua"] + sorted(df['Sub-Kategori'].unique().tolist())
+    
+    sub_pilihan = st.selectbox("Pilih Sub-Kategori:", list_sub)
+
+# --- LOGIKA FILTERING ---
+filtered_df = df.copy()
+
+if kat_pilihan != "Semua":
+    filtered_df = filtered_df[filtered_df['Kategori'] == kat_pilihan]
+
+if sub_pilihan != "Semua":
+    filtered_df = filtered_df[filtered_df['Sub-Kategori'] == sub_pilihan]
+
 if search_query:
-    # Mencari di seluruh kolom (Case Insensitive)
-    filtered_df = df[df.apply(lambda row: row.astype(str).str.contains(search_query, case=False).any(), axis=1)]
-else:
-    filtered_df = df
+    filtered_df = filtered_df[filtered_df.apply(lambda row: row.astype(str).str.contains(search_query, case=False).any(), axis=1)]
 
-# 4. Tampilan di HP (Menggunakan Container agar rapi)
-st.write(f"Menampilkan {len(filtered_df)} materi")
+# --- TAMPILAN MATERI ---
+st.write(f"Menampilkan **{len(filtered_df)}** materi")
 
 for index, row in filtered_df.iterrows():
-    with st.expander(f"📖 {row['Judul']}"): # Judul yang bisa diklik/drop-down
-        st.write(f"**Kategori:** {row['Kategori']}")
-        st.write(f"**Sub-Kategori:** {row['Sub-Kategori']}")
-        st.markdown("---")
-
-        st.write(row['Isi_Materi']) # Detail isi materi
-
+    # Menampilkan Judul sebagai Header Card
+    with st.expander(f"📌 {row['Judul']}"):
+        st.caption(f"Kategori: {row['Kategori']} | Sub: {row['Sub-Kategori']}")
+        
+        st.markdown("### 📖 Isi Materi")
+        st.write(row['Isi Materi'])
+        
+        # Menampilkan Study Kasus jika tidak kosong
+        if pd.notna(row['Study kasus/SubMateri']):
+            st.markdown("### 📝 Study Kasus / SubMateri")
+            st.info(row['Study kasus/SubMateri'])
+        
+        st.divider()
