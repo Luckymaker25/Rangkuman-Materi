@@ -20,28 +20,35 @@ df = load_data()
 
 # --- BAGIAN FILTER ---
 
-# A. Search Bar (Global Search)
+# A. Search Bar
 search_query = st.text_input("🔍 Cari Kata Kunci Materi...", "")
 
 # B. Dropdown Kategori (Berjenjang)
 col1, col2 = st.columns(2)
 
 with col1:
-    list_kategori = ["Semua"] + sorted(df['Kategori'].unique().tolist())
+    # Mengambil data kategori, hapus yang kosong (NaN), lalu urutkan
+    raw_kategori = df['Kategori'].dropna().unique().tolist()
+    list_kategori = ["Semua"] + sorted([str(x) for x in raw_kategori])
     kat_pilihan = st.selectbox("Pilih Kategori:", list_kategori)
 
 with col2:
-    # Filter Sub-Kategori berdasarkan Kategori yang dipilih
     if kat_pilihan != "Semua":
+        # Filter data berdasarkan kategori dulu
         sub_df = df[df['Kategori'] == kat_pilihan]
-        list_sub = ["Semua"] + sorted(sub_df['Sub-Kategori'].unique().tolist())
+        raw_sub = sub_df['Sub-Kategori'].dropna().unique().tolist()
     else:
-        list_sub = ["Semua"] + sorted(df['Sub-Kategori'].unique().tolist())
+        raw_sub = df['Sub-Kategori'].dropna().unique().tolist()
     
+    # Pastikan semua data adalah string agar bisa disorting
+    list_sub = ["Semua"] + sorted([str(x) for x in raw_sub])
     sub_pilihan = st.selectbox("Pilih Sub-Kategori:", list_sub)
 
 # --- LOGIKA FILTERING ---
-filtered_df = df.copy()
+# Buat salinan data dan bersihkan dari nilai NaN khusus untuk proses filter
+df_display = df.fillna("") 
+
+filtered_df = df_display.copy()
 
 if kat_pilihan != "Semua":
     filtered_df = filtered_df[filtered_df['Kategori'] == kat_pilihan]
@@ -50,6 +57,7 @@ if sub_pilihan != "Semua":
     filtered_df = filtered_df[filtered_df['Sub-Kategori'] == sub_pilihan]
 
 if search_query:
+    # Pencarian yang lebih cerdas di semua kolom
     filtered_df = filtered_df[filtered_df.apply(lambda row: row.astype(str).str.contains(search_query, case=False).any(), axis=1)]
 
 # --- TAMPILAN MATERI ---
@@ -69,3 +77,4 @@ for index, row in filtered_df.iterrows():
             st.info(row['Study kasus/SubMateri'])
         
         st.divider()
+
