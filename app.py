@@ -14,6 +14,7 @@ def load_data():
     return pd.read_csv(SHEET_URL)
 
 df = load_data()
+st.write("Nama kolom yang terdeteksi:", df.columns.tolist())
 
 # 2. Fitur Pencarian di Bagian Atas
 search_query = st.text_input("🔍 Cari materi atau kategori...", "")
@@ -33,4 +34,5 @@ for index, row in filtered_df.iterrows():
         st.write(f"**Kategori:** {row['Kategori']}")
         st.write(f"**Sub-Kategori:** {row['Sub']}")
         st.markdown("---")
+
         st.write(row['Isi_Materi']) # Detail isi materi
